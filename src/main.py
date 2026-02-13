@@ -9,6 +9,7 @@ from src.ui.app import App
 from src.ui.views.accounts import AccountsView
 from src.ui.views.dashboard import DashboardView
 from src.ui.views.import_csv import ImportCsvView
+from src.ui.views.reports import ReportsView
 
 
 def main():
@@ -29,6 +30,7 @@ def main():
     app.register_view("Dashboard", lambda parent, c: DashboardView(parent, c))
     app.register_view("Accounts", lambda parent, c: AccountsView(parent, c, on_change=on_data_change))
     app.register_view("Import CSV", lambda parent, c: ImportCsvView(parent, c, on_change=on_data_change))
+    app.register_view("Reports", lambda parent, c: ReportsView(parent, c))
 
     app.show_view("Dashboard")
 

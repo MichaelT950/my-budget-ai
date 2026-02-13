@@ -6,8 +6,11 @@ from tkinter import ttk
 
 from src.database.repositories.account_repo import AccountRepository
 from src.database.repositories.category_repo import CategoryRepository
+from src.database.repositories.statement_repo import StatementRepository
 from src.database.repositories.transaction_repo import TransactionRepository
+from src.services.alerts import AlertService
 from src.services.balance_calculator import BalanceCalculator
+from src.ui.components.alert_banner import AlertBanner
 from src.ui.components.data_table import DataTable
 from src.ui.theme import FONTS, SPACING, TYPE_COLORS
 from src.utils.formatters import format_currency, format_signed_currency
@@ -20,10 +23,16 @@ class DashboardView(ttk.Frame):
         self.account_repo = AccountRepository(conn)
         self.txn_repo = TransactionRepository(conn)
         self.category_repo = CategoryRepository(conn)
+        self.stmt_repo = StatementRepository(conn)
         self.balance_calc = BalanceCalculator(self.account_repo, self.txn_repo)
+        self.alert_svc = AlertService(self.stmt_repo, self.account_repo)
         self._build_ui()
 
     def _build_ui(self):
+        # Alert banners area
+        self.alerts_frame = ttk.Frame(self)
+        self.alerts_frame.pack(fill=tk.X, padx=SPACING["md"], pady=(SPACING["sm"], 0))
+
         # Title
         title = ttk.Label(self, text="Dashboard", font=FONTS["heading"])
         title.pack(anchor="w", padx=SPACING["md"], pady=(SPACING["md"], SPACING["sm"]))
@@ -57,9 +66,17 @@ class DashboardView(ttk.Frame):
         self.refresh()
 
     def refresh(self):
+        self._refresh_alerts()
         self._refresh_summary()
         self._refresh_accounts()
         self._refresh_transactions()
+
+    def _refresh_alerts(self):
+        for widget in self.alerts_frame.winfo_children():
+            widget.destroy()
+        for alert in self.alert_svc.get_all_alerts():
+            banner = AlertBanner(self.alerts_frame, alert.message, alert.alert_type)
+            banner.pack(fill=tk.X, pady=2)
 
     def _refresh_summary(self):
         for widget in self.summary_frame.winfo_children():
