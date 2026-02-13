@@ -59,6 +59,13 @@ while true; do
         --model opus \
         --verbose | jq -C '.'
 
+    # Check if claude command succeeded
+    if [ ${PIPESTATUS[1]} -ne 0 ]; then
+        echo "❌ Claude command failed (likely rate limit or API error)"
+        echo "Stopping loop at iteration $ITERATION"
+        break
+    fi
+
     # Push changes after each iteration
     git push origin "$CURRENT_BRANCH" || {
         echo "Failed to push. Creating remote branch..."

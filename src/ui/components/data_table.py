@@ -27,6 +27,10 @@ class DataTable(ttk.Frame):
             self.tree.heading(col_id, text=heading)
             self.tree.column(col_id, width=width, minwidth=50)
 
+        # Alternating row colors
+        self.tree.tag_configure("even_row", background="#F5F5F5")
+        self.tree.tag_configure("odd_row", background="#FFFFFF")
+
         scrollbar_y = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.tree.yview)
         scrollbar_x = ttk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.tree.xview)
         self.tree.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
@@ -38,14 +42,20 @@ class DataTable(ttk.Frame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        self._row_count = 0
+
     def insert_row(self, values: tuple, tags: tuple = ()) -> str:
         """Insert a row at the end and return its item ID."""
-        return self.tree.insert("", tk.END, values=values, tags=tags)
+        row_tag = "even_row" if self._row_count % 2 == 0 else "odd_row"
+        all_tags = (row_tag,) + tags
+        self._row_count += 1
+        return self.tree.insert("", tk.END, values=values, tags=all_tags)
 
     def clear(self):
         """Remove all rows from the table."""
         for item in self.tree.get_children():
             self.tree.delete(item)
+        self._row_count = 0
 
     def get_selected(self) -> dict | None:
         """Return values dict for selected row, or None."""
