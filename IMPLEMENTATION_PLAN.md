@@ -1,75 +1,24 @@
 # Implementation Plan — My Budget AI
 
-Prioritized bullet-point list ordered by dependency. Status: nothing is implemented yet — `src/` is empty, no config files, no tests.
+Status: Phase 0 + Phase 1 (1.1–1.8) complete. 55 tests passing, lint clean.
 
 ---
 
-## Phase 0: Bootstrap (do first — everything depends on this)
+## Completed
 
-- [ ] Create `.gitignore` — ignore `__pycache__/`, `.venv/`, `data/budget.db`, `.env`, `.DS_Store`, `.ruff_cache/`, `*.egg-info/`
-- [ ] Create `pyproject.toml` — name=my-budget-ai, python>=3.11, deps: pandas>=2.0.0, matplotlib>=3.7.0; dev deps: pytest>=7.0.0, ruff>=0.8.0; ruff config: line-length 88, target py311, select E/F/I/W, ignore E501; pytest config: testpaths=tests, pythonpath=["."]
-- [ ] Create directory structure with `__init__.py` files: `src/`, `src/models/`, `src/database/`, `src/database/repositories/`, `src/services/`, `src/ui/`, `src/ui/components/`, `src/ui/views/`, `src/utils/`, `data/`, `tests/`, `sample_data/`
-- [ ] Create `data/.gitkeep`
-- [ ] Create `tests/__init__.py`
-- [ ] Create minimal `src/main.py` entry point (prints startup message, exits cleanly)
-- [ ] Run `uv venv --python 3.11 && uv pip install -e ".[dev]"` — verify toolchain works
-- [ ] Run `ruff check src/` and `pytest` — verify zero errors, zero tests collected
-- [ ] Populate `AGENTS.md` with actual build/run/test/lint commands: `uv run pytest -v`, `uv run ruff check src/ tests/`, `uv run python -m src.main`
-- [ ] Initial commit
+- **Phase 0: Bootstrap** — `.gitignore`, `pyproject.toml`, directory structure, `main.py`, venv setup, `AGENTS.md`
+- **Phase 1.1: Data Models** — `Account`, `Category`, `Transaction`, `StatementSnapshot` dataclasses
+- **Phase 1.2: Utilities** — `date_helpers.py` (parse_date, is_future_date), `formatters.py` (format_currency, format_signed_currency)
+- **Phase 1.3: Database Layer** — `connection.py` (singleton, WAL, FK), `schema.py` (4 tables, 6 indexes), `seeds.py` (8 categories)
+- **Phase 1.4: Repositories** — `CategoryRepository`, `AccountRepository`, `TransactionRepository`, `StatementRepository`
+- **Phase 1.5: Tests (repos)** — `conftest.py` (:memory: fixture), `test_repositories.py` (CRUD, FK, date filter, JSON round-trip)
+- **Phase 1.6: Services** — `Categorizer` (keyword matching), `CsvImporter` (pandas, type detection, validation), `BalanceCalculator` (checking/CC formulas)
+- **Phase 1.7: Tests (services)** — `test_categorizer.py`, `test_importer.py`, `test_balance_calculator.py`
+- **Phase 1.8: Sample Data** — `checking_account.csv`, `credit_card.csv`, `mixed_format.csv`
 
 ---
 
-## Phase 1: MVP
-
-### 1.1 Data Models (no deps beyond Phase 0)
-
-- [ ] `src/models/account.py` — `Account` dataclass: id, name, type (credit_card/checking/savings), starting_balance, credit_limit (optional), statement_close_day (optional), payment_due_day (optional), created_at, updated_at
-- [ ] `src/models/category.py` — `Category` dataclass: id, name, color, keywords: list[str], created_at, updated_at
-- [ ] `src/models/transaction.py` — `Transaction` dataclass: id, account_id, type (income/expense/transfer), amount (always positive), description, category_id (optional), date, transfer_to_account_id (optional), notes (optional), created_at, updated_at
-- [ ] `src/models/statement.py` — `StatementSnapshot` dataclass: id, account_id, statement_date, balance, due_date, is_paid, created_at, updated_at
-- [ ] `src/models/__init__.py` — re-export all 4 model classes
-
-### 1.2 Utilities (no deps beyond Phase 0)
-
-- [ ] `src/utils/date_helpers.py` — `parse_date(str) -> date` (supports YYYY-MM-DD, MM/DD/YYYY, MM-DD-YYYY, M/D/YYYY), `is_future_date(date) -> bool`
-- [ ] `src/utils/formatters.py` — `format_currency(float) -> str` (e.g. "$1,234.56"), `format_signed_currency(float, type) -> str` (prefix +/- based on transaction type)
-
-### 1.3 Database Layer (depends on 1.1 Models)
-
-- [ ] `src/database/connection.py` — singleton connection manager: `get_connection(db_path)`, `close_connection()`, `reset_connection()`; default path `data/budget.db`; enables WAL mode + foreign keys; accepts `:memory:` for tests
-- [ ] `src/database/schema.py` — `initialize_database(conn)`: CREATE TABLE IF NOT EXISTS for all 4 tables per `spec/DATA_MODEL.md`; UNIQUE on statement_snapshots(account_id, statement_date); 6 indexes; idempotent
-- [ ] `src/database/seeds.py` — `seed_categories(conn)`: INSERT OR IGNORE 8 categories with colors and keyword JSON arrays per spec
-
-### 1.4 Repositories (depends on 1.3 Database Layer)
-
-- [ ] `src/database/repositories/category_repo.py` — `CategoryRepository(conn)`: get_all, get_by_id, get_by_name; parses keywords JSON
-- [ ] `src/database/repositories/account_repo.py` — `AccountRepository(conn)`: create, get_by_id, get_all, update, delete
-- [ ] `src/database/repositories/transaction_repo.py` — `TransactionRepository(conn)`: create, create_many, get_by_account (with optional date range), get_all (with optional date range), update, delete
-- [ ] `src/database/repositories/statement_repo.py` — `StatementRepository(conn)`: create, get_by_account, get_unpaid, mark_paid
-- [ ] `src/database/repositories/__init__.py` — re-export all 4 repository classes
-
-### 1.5 Tests: conftest + Repositories (depends on 1.4)
-
-- [ ] `tests/conftest.py` — pytest fixture providing fresh `:memory:` SQLite connection with schema initialized + categories seeded; new connection per test for isolation
-- [ ] `tests/test_repositories.py` — CRUD tests for all 4 repos; FK constraint enforcement; date filtering on transactions; keyword JSON round-trip
-
-### 1.6 Services — MVP (depends on 1.4 Repositories + 1.2 Utilities)
-
-- [ ] `src/services/categorizer.py` — `Categorizer(categories: list[Category])`: builds keyword->category map at init; `categorize(description) -> Category | None` (case-insensitive substring match); `categorize_with_fallback(description) -> Category` (returns Uncategorized if no match)
-- [ ] `src/services/importer.py` — `CsvImporter`: pandas CSV parsing; type detection (explicit column > income keywords > transfer keywords > expense); amounts stored as abs(); validation (date parseable + not future, amount != 0, description not empty); returns `ImportResult(transactions: list[Transaction], errors: list[str], total_rows: int)`
-- [ ] `src/services/balance_calculator.py` — `BalanceCalculator(account_repo, transaction_repo)`: checking/savings = starting_balance + income + transfers_in - expenses - transfers_out; credit_card = starting_balance + expenses - payments_received (transfers IN); `get_balance(account) -> float`, `get_all_balances() -> dict[int, float]`
-
-### 1.7 Tests: Services (depends on 1.6)
-
-- [ ] `tests/test_categorizer.py` — keyword matching, case insensitivity, multi-word keywords, unknown falls back to Uncategorized
-- [ ] `tests/test_importer.py` — type detection (income/transfer/expense keywords), amount normalization (negative -> positive), validation rejects future dates / zero amounts / empty descriptions, handles both sign conventions
-- [ ] `tests/test_balance_calculator.py` — checking balance calc, CC balance calc (debt model), empty account returns starting_balance, mixed transaction types
-
-### 1.8 Sample Data (no code deps, useful for manual testing)
-
-- [ ] `sample_data/checking_account.csv` — income deposits, CC payment (transfer), expenses; YYYY-MM-DD dates; no type column
-- [ ] `sample_data/credit_card.csv` — expenses and payment received; YYYY-MM-DD dates; no type column
-- [ ] `sample_data/mixed_format.csv` — explicit type column; MM/DD/YYYY dates; absolute amounts
+## Next Up: Phase 1.9–1.12 (UI + App Shell)
 
 ### 1.9 UI Foundation (depends on 1.1 Models for type refs)
 
@@ -183,3 +132,9 @@ Prioritized bullet-point list ordered by dependency. Status: nothing is implemen
 - **Date validation** — reject future dates during CSV import
 - **Income keywords** (for type detection): DIRECT DEPOSIT, PAYROLL, SALARY, TAX REFUND, INTEREST PAYMENT, DIVIDEND
 - **Transfer keywords**: PAYMENT THANK YOU, AUTOPAY, PAYMENT - THANK, ONLINE TRANSFER, TRANSFER TO, TRANSFER FROM
+
+## Learnings
+
+- `uv` on this system is installed as a Python package — use `python3 -m uv` (not bare `uv`)
+- venv Python is 3.11.5 at `.venv/bin/python`, system Python is 3.9.6
+- Install command: `python3 -m uv pip install -e ".[dev]" --python .venv/bin/python`

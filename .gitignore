@@ -1,0 +1,7 @@
+__pycache__/
+.venv/
+data/budget.db
+.env
+.DS_Store
+.ruff_cache/
+*.egg-info/

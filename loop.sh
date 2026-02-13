@@ -57,7 +57,7 @@ while true; do
         --dangerously-skip-permissions \
         --output-format=stream-json \
         --model opus \
-        --verbose
+        --verbose | jq -C '.'
 
     # Push changes after each iteration
     git push origin "$CURRENT_BRANCH" || {
