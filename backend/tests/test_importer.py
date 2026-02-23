@@ -152,6 +152,19 @@ class TestCsvImporter:
         finally:
             os.unlink(path)
 
+    def test_unpadded_m_d_yyyy_date_format(self):
+        """M/D/YYYY (no leading zeros) should parse correctly — spec requirement."""
+        path = self._write_csv(
+            "date,amount,description\n"
+            "1/5/2024,75.00,UNPADDED DATE PURCHASE\n"
+        )
+        try:
+            result = CsvImporter().import_csv(path, account_id=1)
+            assert len(result.transactions) == 1
+            assert result.transactions[0].date == "2024-01-05"
+        finally:
+            os.unlink(path)
+
     def test_mixed_valid_and_invalid_rows(self):
         path = self._write_csv(
             "date,amount,description\n"

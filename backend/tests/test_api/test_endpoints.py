@@ -198,6 +198,61 @@ class TestReports:
         assert "total_income" in data
 
 
+# --- Statements ---
+
+class TestStatements:
+    def _create_cc_with_statement(self, client):
+        """Create a CC account and a statement snapshot, return (account_id, statement_id)."""
+        resp = client.post("/api/accounts", json={
+            "name": "Test CC", "type": "credit_card",
+            "starting_balance": 0.0, "credit_limit": 5000.0,
+            "statement_close_day": 15, "payment_due_day": 25,
+        })
+        acct_id = resp.json()["id"]
+
+        # Create a statement via the repo directly (statements are auto-created, no POST endpoint)
+        from src.api.deps import _conn
+        from src.database.repositories.statement_repo import StatementRepository
+        from src.models.statement import StatementSnapshot
+        repo = StatementRepository(_conn)
+        stmt = repo.create(StatementSnapshot(
+            account_id=acct_id, statement_date="2025-01-15",
+            balance=500.0, due_date="2025-01-25",
+        ))
+        return acct_id, stmt.id
+
+    def test_list_statements_by_account(self, client):
+        acct_id, _ = self._create_cc_with_statement(client)
+        resp = client.get(f"/api/statements?account_id={acct_id}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        assert data[0]["account_id"] == acct_id
+        assert data[0]["balance"] == 500.0
+
+    def test_list_unpaid_statements(self, client):
+        self._create_cc_with_statement(client)
+        resp = client.get("/api/statements/unpaid")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        assert data[0]["is_paid"] is False
+
+    def test_mark_statement_paid(self, client):
+        _, stmt_id = self._create_cc_with_statement(client)
+        resp = client.patch(f"/api/statements/{stmt_id}/paid")
+        assert resp.status_code == 200
+        assert resp.json()["ok"] is True
+
+        # Verify it's now paid
+        resp = client.get("/api/statements/unpaid")
+        assert len(resp.json()) == 0
+
+    def test_mark_nonexistent_statement_paid(self, client):
+        resp = client.patch("/api/statements/999/paid")
+        assert resp.status_code == 404
+
+
 # --- Import ---
 
 class TestImport:

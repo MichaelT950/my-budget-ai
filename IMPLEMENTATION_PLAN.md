@@ -1,6 +1,6 @@
 # Implementation Plan — My Budget AI
 
-Status: Migration to React + FastAPI complete. 93 backend tests passing, frontend builds clean. Tags: 0.0.1–0.0.5.
+Status: 113 backend tests passing, frontend builds clean. Tags: 0.0.1–0.0.6.
 
 ---
 
@@ -19,7 +19,6 @@ Status: Migration to React + FastAPI complete. 93 backend tests passing, fronten
 - **pyproject.toml** swapped GUI deps (customtkinter, matplotlib) for FastAPI stack (fastapi, uvicorn, python-multipart, httpx)
 - **API integration tests**: 18 new tests in `backend/tests/test_api/test_endpoints.py`
 - Deleted old `src/ui/`, `src/main.py`, top-level `src/` (canonical code now in `backend/src/`)
-- Total: 93 tests passing
 
 ### Phase 5: Frontend (tag 0.0.5)
 - **React + TypeScript + Vite** scaffold with Tailwind CSS, TanStack Query, React Router, Recharts
@@ -35,6 +34,18 @@ Status: Migration to React + FastAPI complete. 93 backend tests passing, fronten
 - **Utils**: formatters.ts (currency, date, account type, transaction type, category colors)
 - Frontend builds cleanly (`tsc -b && vite build`)
 
+### Phase 6: Alerts, Bug Fixes, Test Coverage, Production Script (tag 0.0.6)
+- **Overdraft alerts**: `AlertService.get_overdraft_alerts()` — warns when checking/savings balance goes negative. Wired to `BalanceCalculator` for real-time balance checks.
+- **Expense threshold alerts**: `AlertService.get_expense_threshold_alerts()` — warns when current-month expenses reach 90%+ of income (warning) or exceed 100% (error). Uses `CashFlowService`.
+- **AlertService constructor** now takes 4 deps: `statement_repo`, `account_repo`, `balance_calculator`, `cash_flow_service`. DI container and dashboard router updated accordingly.
+- **Date parsing bug fix**: `parse_date()` now handles `M/D/YYYY` (unpadded single-digit month/day) by parsing numeric components directly instead of relying solely on `strptime` format strings.
+- **StatementService tests** (7 tests): snapshot creation on close day, skip non-CC accounts, skip before close day, idempotency, due date next month when due_day < close_day, December→January rollover, skip accounts without close_day.
+- **Statements API tests** (4 tests): list by account, list unpaid, mark paid, mark nonexistent 404.
+- **New alert tests** (8 tests): overdraft trigger/no-trigger/CC-excluded, expense threshold at 90%/100%+/below 90%/zero income, get_all_alerts combines all types.
+- **Importer test**: `M/D/YYYY` unpadded date format parsing.
+- **start.sh**: Production script that builds frontend and serves full app via uvicorn on port 8000.
+- Total: 113 tests passing (was 93)
+
 ---
 
 ## Key Spec References
@@ -45,6 +56,7 @@ Status: Migration to React + FastAPI complete. 93 backend tests passing, fronten
 - **Transfer = $0 budget impact** — core differentiator solving CC payment double-counting
 - **CC balance formula**: starting_balance + expenses - payments_received (payments are transfers IN to CC)
 - **Checking balance formula**: starting_balance + income + transfers_in - expenses - transfers_out
+- **Three alert types**: payment due dates (7-day window), overdraft on checking/savings, expenses approaching income (90% threshold)
 
 ## Learnings
 
@@ -55,10 +67,10 @@ Status: Migration to React + FastAPI complete. 93 backend tests passing, fronten
 - Frontend npm install requires `PATH="/usr/local/Cellar/node/25.2.1/bin:/bin:/usr/bin:$PATH"` to avoid spawn sh ENOENT
 - Recharts v3 formatter callbacks accept `number | string | undefined` — don't type-annotate the param, use `Number(v ?? 0)`
 - TypeScript `erasableSyntaxOnly` forbids parameter properties (`public x: T` in constructors); use explicit field declaration
+- `date.fromisoformat()` works for mock patching; `unittest.mock.patch` with `side_effect = lambda *a, **kw: date(*a, **kw)` preserves `date()` constructor while mocking `date.today()`
 
 ## Future Work
 
-- **start.sh** production script (build frontend, serve via uvicorn)
 - **CSV Column Mapping UI** (post-MVP)
 - **Duplicate Detection** on import (post-MVP)
 - **Split Transactions** — `split_group_id` column (post-MVP)

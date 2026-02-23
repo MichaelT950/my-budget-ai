@@ -51,7 +51,13 @@ def get_dashboard(conn: sqlite3.Connection = Depends(get_conn)):
         for a in accounts
     ]
 
-    alert_svc = get_alert_service(stmt_repo, acct_repo)
+    today = date.today()
+    start_of_month = today.replace(day=1).isoformat()
+    end_of_month = today.isoformat()
+    cf_svc = get_cash_flow_service(txn_repo, cat_repo)
+    cf = cf_svc.get_cash_flow(start_of_month, end_of_month)
+
+    alert_svc = get_alert_service(stmt_repo, acct_repo, calc, cf_svc)
     alerts = [
         AlertResponse(
             message=a.message, alert_type=a.alert_type,
@@ -60,12 +66,6 @@ def get_dashboard(conn: sqlite3.Connection = Depends(get_conn)):
         )
         for a in alert_svc.get_all_alerts()
     ]
-
-    today = date.today()
-    start_of_month = today.replace(day=1).isoformat()
-    end_of_month = today.isoformat()
-    cf_svc = get_cash_flow_service(txn_repo, cat_repo)
-    cf = cf_svc.get_cash_flow(start_of_month, end_of_month)
 
     bs_svc = get_balance_sheet_service(acct_repo, calc)
     bs = bs_svc.get_balance_sheet()

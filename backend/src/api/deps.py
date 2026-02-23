@@ -69,9 +69,12 @@ def get_balance_sheet_service(
 
 
 def get_alert_service(
-    statement_repo: StatementRepository, account_repo: AccountRepository
+    statement_repo: StatementRepository,
+    account_repo: AccountRepository,
+    balance_calc: BalanceCalculator,
+    cash_flow_svc: CashFlowService,
 ) -> AlertService:
-    return AlertService(statement_repo, account_repo)
+    return AlertService(statement_repo, account_repo, balance_calc, cash_flow_svc)
 
 
 def get_report_service(
