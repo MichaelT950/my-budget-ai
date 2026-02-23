@@ -1,7 +1,13 @@
 __pycache__/
 .venv/
+venv/
 data/budget.db
 .env
 .DS_Store
 .ruff_cache/
 *.egg-info/
+node_modules/
+frontend/dist/
+text.md
+backend/.venv
+**/budget.db

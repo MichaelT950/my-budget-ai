@@ -1,271 +1,198 @@
 # Project Structure
 
-## Directory Layout
+## Directory Layout (Monorepo)
 
 ```
 my-budget-ai/
 ├── spec/                          # Specification documents
 │   ├── README.md                  # Main specification
 │   ├── DATA_MODEL.md              # Database schema and queries
-│   └── PROJECT_STRUCTURE.md       # This file
+│   ├── PROJECT_STRUCTURE.md       # This file
+│   ├── CSV_SCHEMA.md              # CSV import format
+│   └── MIGRATION.md               # React+FastAPI migration plan
 │
-├── src/                           # Application source code
-│   ├── __init__.py
-│   ├── main.py                    # Application entry point
+├── backend/                       # Python backend (FastAPI)
+│   ├── pyproject.toml             # Python dependencies and config
+│   ├── run.py                     # Uvicorn entry point
 │   │
-│   ├── models/                    # Data models (dataclasses)
+│   ├── src/                       # Application source code
 │   │   ├── __init__.py
-│   │   ├── account.py             # Account model
-│   │   ├── transaction.py         # Transaction model
-│   │   ├── category.py            # Category model
-│   │   └── statement.py           # StatementSnapshot model
-│   │
-│   ├── database/                  # Database layer
-│   │   ├── __init__.py
-│   │   ├── connection.py          # SQLite connection management
-│   │   ├── schema.py              # Table creation and migrations
-│   │   ├── seeds.py               # Seed data (categories)
-│   │   └── repositories/          # Data access layer
-│   │       ├── __init__.py
-│   │       ├── account_repo.py    # Account CRUD operations
-│   │       ├── transaction_repo.py # Transaction CRUD operations
-│   │       ├── category_repo.py   # Category operations
-│   │       └── statement_repo.py  # Statement snapshot operations
-│   │
-│   ├── services/                  # Business logic layer
-│   │   ├── __init__.py
-│   │   ├── categorizer.py         # Rule-based auto-categorization
-│   │   ├── importer.py            # CSV import logic
-│   │   ├── balance_calculator.py  # Account balance calculations
-│   │   ├── cash_flow.py           # Cash flow statement logic
-│   │   ├── balance_sheet.py       # Balance sheet (net worth) logic
-│   │   ├── alerts.py              # Due date and overdraft warnings
-│   │   └── reports.py             # Activity analysis and exports
-│   │
-│   ├── ui/                        # Tkinter GUI layer
-│   │   ├── __init__.py
-│   │   ├── app.py                 # Main application window
-│   │   ├── theme.py               # Colors and styling constants
-│   │   ├── components/            # Reusable UI components
+│   │   │
+│   │   ├── models/                # Data models (dataclasses)
 │   │   │   ├── __init__.py
-│   │   │   ├── alert_banner.py    # Warning/alert display
-│   │   │   └── data_table.py      # Transaction list table
-│   │   └── views/                 # Application views/screens
+│   │   │   ├── account.py
+│   │   │   ├── transaction.py
+│   │   │   ├── category.py
+│   │   │   └── statement.py
+│   │   │
+│   │   ├── database/              # Database layer
+│   │   │   ├── __init__.py
+│   │   │   ├── connection.py      # SQLite connection factory
+│   │   │   ├── schema.py          # Table creation and migrations
+│   │   │   ├── seeds.py           # Seed data (categories)
+│   │   │   └── repositories/
+│   │   │       ├── __init__.py
+│   │   │       ├── account_repo.py
+│   │   │       ├── transaction_repo.py
+│   │   │       ├── category_repo.py
+│   │   │       └── statement_repo.py
+│   │   │
+│   │   ├── services/              # Business logic layer
+│   │   │   ├── __init__.py
+│   │   │   ├── categorizer.py
+│   │   │   ├── importer.py        # CSV import (accepts path or file-like)
+│   │   │   ├── balance_calculator.py
+│   │   │   ├── cash_flow.py
+│   │   │   ├── balance_sheet.py
+│   │   │   ├── alerts.py
+│   │   │   ├── reports.py
+│   │   │   └── statement_service.py
+│   │   │
+│   │   ├── api/                   # FastAPI REST API
+│   │   │   ├── __init__.py
+│   │   │   ├── app.py             # FastAPI app, lifespan, CORS
+│   │   │   ├── deps.py            # Dependency injection
+│   │   │   ├── schemas.py         # Pydantic request/response models
+│   │   │   └── routers/
+│   │   │       ├── __init__.py
+│   │   │       ├── accounts.py
+│   │   │       ├── transactions.py
+│   │   │       ├── categories.py
+│   │   │       ├── statements.py
+│   │   │       ├── dashboard.py
+│   │   │       ├── reports.py
+│   │   │       └── import_csv.py
+│   │   │
+│   │   └── utils/                 # Utility functions
 │   │       ├── __init__.py
-│   │       ├── dashboard.py       # Main dashboard (combined view)
-│   │       ├── accounts.py        # Account management view
-│   │       ├── transactions.py    # Transaction list/search view
-│   │       ├── import_csv.py      # CSV import wizard
-│   │       └── reports.py         # Reports and analysis view
+│   │       ├── date_helpers.py
+│   │       └── formatters.py
 │   │
-│   └── utils/                     # Utility functions
-│       ├── __init__.py
-│       ├── date_helpers.py        # Date parsing and formatting
-│       └── formatters.py          # Currency and number formatting
+│   ├── data/                      # Data directory
+│   │   ├── .gitkeep
+│   │   └── budget.db              # SQLite database (created at runtime)
+│   │
+│   ├── tests/                     # Test suite
+│   │   ├── __init__.py
+│   │   ├── conftest.py            # pytest fixtures
+│   │   ├── test_categorizer.py
+│   │   ├── test_importer.py
+│   │   ├── test_balance_calculator.py
+│   │   ├── test_balance_sheet.py
+│   │   ├── test_cash_flow.py
+│   │   ├── test_alerts.py
+│   │   ├── test_reports.py
+│   │   ├── test_repositories.py
+│   │   └── test_api/              # API integration tests
+│   │       ├── __init__.py
+│   │       └── test_endpoints.py
+│   │
+│   └── sample_data/               # Sample CSV files
+│       ├── checking_account.csv
+│       ├── credit_card.csv
+│       └── mixed_format.csv
 │
-├── data/                          # Data directory (gitignored except .gitkeep)
-│   ├── .gitkeep
-│   └── budget.db                  # SQLite database (created at runtime)
+├── frontend/                      # React + TypeScript frontend
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── vite.config.ts
+│   ├── index.html
+│   │
+│   └── src/
+│       ├── main.tsx               # React entry point
+│       ├── App.tsx                # Routes and providers
+│       ├── index.css              # Tailwind imports
+│       │
+│       ├── api/                   # Typed API client
+│       │   ├── client.ts          # Base fetch wrapper
+│       │   ├── accounts.ts
+│       │   ├── transactions.ts
+│       │   ├── categories.ts
+│       │   ├── reports.ts
+│       │   ├── import.ts
+│       │   └── dashboard.ts
+│       │
+│       ├── types/
+│       │   └── index.ts           # TS interfaces matching Pydantic schemas
+│       │
+│       ├── components/
+│       │   ├── Layout.tsx         # Sidebar + Outlet
+│       │   ├── Sidebar.tsx
+│       │   ├── DataTable.tsx
+│       │   └── AlertBanner.tsx
+│       │
+│       ├── pages/
+│       │   ├── Dashboard.tsx
+│       │   ├── Accounts.tsx
+│       │   ├── Transactions.tsx
+│       │   ├── ImportCsv.tsx
+│       │   └── Reports.tsx
+│       │
+│       └── utils/
+│           └── formatters.ts      # Currency formatting helpers
 │
-├── tests/                         # Test suite
-│   ├── __init__.py
-│   ├── conftest.py                # pytest fixtures
-│   ├── test_categorizer.py
-│   ├── test_importer.py
-│   ├── test_balance_calculator.py
-│   └── test_repositories.py
-│
-├── sample_data/                   # Sample CSV files for testing
-│   └── sample_transactions.csv
-│
-├── pyproject.toml                 # Project configuration
-├── README.md                      # User-facing readme
 └── .gitignore
 ```
 
 ---
 
-## Module Responsibilities
+## Architecture
 
-### `src/main.py`
-- Application entry point
-- Initialize database connection
-- Launch Tkinter main window
-- Handle graceful shutdown
-
-### `src/models/`
-Python dataclasses representing domain entities. No database logic here.
-
-```python
-# Example: src/models/account.py
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Optional
-
-@dataclass
-class Account:
-    id: Optional[int]
-    name: str
-    type: str  # 'credit_card', 'checking', 'savings'
-    starting_balance: float
-    credit_limit: Optional[float] = None
-    statement_close_day: Optional[int] = None
-    payment_due_day: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+```
+React (Frontend) → FastAPI REST API (Backend) → Services → Repositories → SQLite
 ```
 
-### `src/database/`
-All SQLite interactions isolated here.
+Each layer only depends on the layer below it.
 
-- **connection.py**: Singleton connection, context manager
-- **schema.py**: CREATE TABLE statements, migrations
-- **seeds.py**: Insert default categories
-- **repositories/**: CRUD operations returning model objects
+### Backend Layers
 
-### `src/services/`
-Business logic, independent of UI and database implementation.
+- **API Layer** (`src/api/`): FastAPI routers, Pydantic schemas, dependency injection
+- **Services** (`src/services/`): Business logic, independent of API and database implementation
+- **Repositories** (`src/database/repositories/`): CRUD operations returning model objects
+- **Models** (`src/models/`): Python dataclasses representing domain entities
 
-- **categorizer.py**: Match transaction descriptions to categories
-- **importer.py**: Parse CSV, validate, create transactions
-- **balance_calculator.py**: Compute account balances
-- **cash_flow.py**: Income vs expenses for period
-- **balance_sheet.py**: Net worth calculation
-- **alerts.py**: Check for upcoming due dates, overdraft risks
-- **reports.py**: Generate activity analysis data
+### Frontend Layers
 
-### `src/ui/`
-Tkinter GUI code.
-
-- **app.py**: Main window, menu bar, view navigation
-- **theme.py**: Category colors, fonts, spacing
-- **components/**: Reusable widgets
-- **views/**: Full-screen views (dashboard, accounts, etc.)
-
-### `src/utils/`
-Stateless helper functions.
+- **Pages** (`src/pages/`): Full-page views mapped to routes
+- **Components** (`src/components/`): Reusable UI components
+- **API Client** (`src/api/`): Typed fetch wrappers per resource
+- **Types** (`src/types/`): TypeScript interfaces matching backend schemas
 
 ---
 
 ## Key Design Decisions
 
-### 1. Layered Architecture
-```
-UI (Tkinter) → Services (Business Logic) → Repositories (Data Access) → SQLite
-```
-Each layer only depends on the layer below it.
+### 1. Monorepo Structure
+Backend and frontend live in the same repository for easy development and deployment.
 
 ### 2. Repository Pattern
-Database operations are encapsulated in repository classes, returning model objects. This makes testing easier and keeps SQL out of business logic.
+Database operations are encapsulated in repository classes, returning model objects.
 
-### 3. Dataclasses for Models
-Simple, immutable-ish data containers. No ORM complexity.
+### 3. Dependency Injection
+FastAPI's `Depends()` chain provides connections, repos, and services to route handlers.
 
 ### 4. Single Database File
-All data in `data/budget.db`. Easy backup (copy the file).
+All data in `backend/data/budget.db`. Easy backup (copy the file).
 
-### 5. Category Colors in Theme
-```python
-# src/ui/theme.py
-CATEGORY_COLORS = {
-    'red': '#E53935',      # Health
-    'orange': '#FB8C00',   # Food & Drink
-    'yellow': '#FDD835',   # Shopping
-    'green': '#43A047',    # Travel
-    'blue': '#1E88E5',     # Transportation
-    'purple': '#8E24AA',   # Services
-    'pink': '#D81B60',     # Entertainment
-    'gray': '#757575',     # Uncategorized
-}
-```
-
----
-
-## File Naming Conventions
-
-| Type | Convention | Example |
-|------|------------|---------|
-| Modules | snake_case | `balance_calculator.py` |
-| Classes | PascalCase | `AccountRepository` |
-| Functions | snake_case | `calculate_balance()` |
-| Constants | UPPER_SNAKE | `CATEGORY_COLORS` |
-
----
-
-## Import Examples
-
-```python
-# In a service
-from src.models.transaction import Transaction
-from src.database.repositories.transaction_repo import TransactionRepository
-
-# In a view
-from src.services.cash_flow import CashFlowService
-from src.ui.theme import CATEGORY_COLORS
-```
-
----
-
-## Database Location
-
-The SQLite database is stored at:
-```
-my-budget-ai/data/budget.db
-```
-
-On first run, the application will:
-1. Create the `data/` directory if it doesn't exist
-2. Create `budget.db` with all tables
-3. Seed the categories table with default values
-
----
-
-## Configuration
-
-All configuration in `pyproject.toml`:
-
-```toml
-[project]
-name = "my-budget-ai"
-version = "0.1.0"
-requires-python = ">=3.11"
-dependencies = [
-    "pandas>=2.0.0",
-    "matplotlib>=3.7.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "ruff>=0.1.0",
-]
-
-[tool.ruff]
-line-length = 88
-select = ["E", "F", "I", "W"]
-ignore = ["E501"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-```
+### 5. TanStack Query for State
+Server state managed via React Query — automatic caching, refetching, and invalidation.
 
 ---
 
 ## Running the Application
 
 ```bash
-# Install dependencies
-uv venv
-source .venv/bin/activate
-uv pip install -e .
+# Backend
+cd backend
+python -m uv pip install -e ".[dev]" --python .venv/bin/python
+.venv/bin/python run.py              # Starts on http://localhost:8000
+.venv/bin/pytest -v                  # Run tests
 
-# Run the app
-python -m src.main
+# Frontend
+cd frontend
+npm install
+npm run dev                          # Starts on http://localhost:5173 (proxies /api to backend)
 
-# Run tests
-pytest
-
-# Lint
-ruff check src/ tests/
+# Production
+./start.sh                           # Builds frontend + starts uvicorn serving everything
 ```

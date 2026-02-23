@@ -2,7 +2,7 @@
 
 ## Summary
 
-A personal offline Mac desktop app for tracking expenses across multiple credit cards and bank accounts, comparing them against income, with AI-powered categorization. The core differentiator is **correct handling of credit card payments** - avoiding the double-counting problem found in traditional budgeting apps.
+A personal local web app for tracking expenses across multiple credit cards and bank accounts, comparing them against income, with AI-powered categorization. The core differentiator is **correct handling of credit card payments** - avoiding the double-counting problem found in traditional budgeting apps.
 
 ## App Name
 "My Budget AI"
@@ -25,7 +25,7 @@ Single user, no multi-user features.
 - Track expenses vs. income with both Balance Sheet and Cash Flow views
 - Simple aggregates for weekly/monthly/yearly insights
 - Billing cycle awareness with 7-day advance due date warnings
-- 100% offline and free
+- Runs locally — all data stays on your machine
 
 ---
 
@@ -98,10 +98,6 @@ My Budget AI (Correct):
 - User maps columns during first import per account
 - Fields: date, amount, description, (transaction type inferred or specified)
 
-**Future Iterations (Post-MVP):**
-- Form-based UI entry (real-time as you swipe)
-- API endpoint for external integrations
-
 ---
 
 ### 4. Transaction Management
@@ -124,11 +120,7 @@ My Budget AI (Correct):
 **Manual Operations:**
 - Override auto-assigned categories
 - Add notes to transactions
-- Split transactions across categories
 - Search/filter by date, account, category, amount
-
-**Nice-to-Have (Future):**
-- Learn from manual corrections to improve future categorization
 
 ---
 
@@ -187,14 +179,11 @@ My Budget AI (Correct):
 - Per-account views in separate tabs
 - Upcoming due dates prominently displayed
 
-**Export:**
-- CSV or plain text files
-
 ---
 
 ### 8. Notifications & Alerts
 
-In-app only (no push/email - offline app):
+In-app only:
 - Payment due date approaching (7 days out)
 - Potential overdraft on pending transfers
 - Expenses approaching income threshold
@@ -204,91 +193,40 @@ In-app only (no push/email - offline app):
 ## Non-Functional Requirements
 
 ### Platform
-Mac desktop app (Python with Tkinter GUI)
+Local web application (Python backend + React frontend, served on localhost)
 
 ### Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| Language | Python 3.11 |
-| Package Management | UV |
+| Language (Backend) | Python 3.11 |
+| Language (Frontend) | TypeScript |
+| Package Management | UV (Python), npm (JS) |
 | Configuration | pyproject.toml |
-| GUI | Tkinter |
+| Frontend Framework | React + Vite |
+| Styling | Tailwind CSS |
+| Charts | Recharts |
+| State Management | TanStack Query (React Query) |
+| Routing | React Router v6 |
+| Backend Framework | FastAPI |
 | Data Processing | Pandas |
 | Database | SQLite |
 | Categorization (MVP) | Rule-based keyword matching |
-| Categorization (Future) | scikit-learn, NLTK |
-| Visualization | Matplotlib |
-| Linting | Ruff |
-| Security (Future) | Fernet encryption |
+| Linting | Ruff (Python), TypeScript strict mode |
 
 ### Performance
 - ~50 transactions/month expected
 - Pandas/SQLite are lightweight; no scaling concerns
 
 ### Usability
-- Minimal, clean design
-- Text-heavy UI with essential actions
-- Color-coded categories (text foreground colors in Tkinter)
+- Clean, modern web interface
+- Responsive layout with sidebar navigation
+- Color-coded categories
 
 ### Privacy
-- 100% offline - no internet calls
-- All data stored locally in repository
+- Runs locally on localhost — no internet calls
+- All data stored locally in SQLite
 
 ### Testing
-- Basic manual tests for MVP
-- pytest for unit tests (optional)
-
----
-
-## Development Phases
-
-### MVP
-- CSV import with consistent schema
-- SQLite storage
-- Basic transaction viewing
-- Rule-based auto-categorization
-- Three transaction types (income, expense, transfer)
-- Per-account balance tracking
-- Combined dashboard view
-
-### Iteration 1
-- Cash Flow Statement view
-- Balance Sheet view
-- Billing cycle tracking
-- Due date warnings (7-day advance)
-
-### Iteration 2
-- Activity Analysis with drill-down
-- Per-account tab views
-- UI polish and color-coding
-- Statement balance auto-calculation
-
-### Future
-- Form-based UI entry
-- API endpoint
-- ML-based categorization
-- Learning from corrections
-- Encryption
-
----
-
-## Open Questions (Resolved)
-
-| Question | Decision |
-|----------|----------|
-| CSV format | Single consistent schema |
-| Account management | Dynamic add/remove |
-| Credit card balance tracking | Track as debt with running balance |
-| Double-counting | Transfer type solves this |
-| Duplicate detection | Not needed |
-| Categorization approach | Rule-based for MVP |
-| Learning from corrections | Nice-to-have for future |
-| Default view | All accounts combined |
-| Aggregates detail | High-level first, drill-down available |
-| Encryption | Later iteration |
-| Database location | In repository |
-| Overdraft handling | Warn 7 days in advance |
-| Statement balance | Auto-calculate, editable |
-| Income categories | Single bucket |
-| Future entry method | Real-time as you swipe |
+- pytest for backend unit + integration tests
+- TypeScript strict mode for frontend type safety

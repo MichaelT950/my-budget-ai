@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  /* Category colors from theme.py */
+  --color-cat-red: #E53935;
+  --color-cat-orange: #FB8C00;
+  --color-cat-yellow: #FDD835;
+  --color-cat-green: #43A047;
+  --color-cat-blue: #1E88E5;
+  --color-cat-purple: #8E24AA;
+  --color-cat-pink: #D81B60;
+  --color-cat-gray: #757575;
+
+  /* Transaction type colors */
+  --color-income: #43A047;
+  --color-expense: #E53935;
+  --color-transfer: #757575;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
