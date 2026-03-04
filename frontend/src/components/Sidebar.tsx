@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { to: '/transactions', label: 'Transactions', icon: '#' },
   { to: '/import', label: 'Import CSV', icon: '+' },
   { to: '/reports', label: 'Reports', icon: '%' },
+  { to: '/statements', label: 'Statements', icon: '!' },
 ];
 
 export default function Sidebar() {

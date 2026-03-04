@@ -6,6 +6,7 @@ import Accounts from './pages/Accounts.tsx';
 import Transactions from './pages/Transactions.tsx';
 import ImportCsv from './pages/ImportCsv.tsx';
 import Reports from './pages/Reports.tsx';
+import Statements from './pages/Statements.tsx';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +28,7 @@ function App() {
             <Route path="transactions" element={<Transactions />} />
             <Route path="import" element={<ImportCsv />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="statements" element={<Statements />} />
           </Route>
         </Routes>
       </BrowserRouter>

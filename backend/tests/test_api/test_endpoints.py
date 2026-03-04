@@ -290,3 +290,53 @@ class TestImport:
 
         txns = client.get(f"/api/transactions?account_id={acct_id}").json()
         assert len(txns) == 1
+
+
+# --- 404 coverage ---
+
+class TestAccountNotFound:
+    def test_update_nonexistent_account_404(self, client):
+        resp = client.put("/api/accounts/9999", json={
+            "name": "Ghost", "type": "checking", "starting_balance": 0.0,
+        })
+        assert resp.status_code == 404
+
+    def test_delete_nonexistent_account_404(self, client):
+        resp = client.delete("/api/accounts/9999")
+        assert resp.status_code == 404
+
+
+class TestTransactionNotFound:
+    def test_update_nonexistent_transaction_404(self, client):
+        resp = client.put("/api/transactions/9999", json={"notes": "ghost"})
+        assert resp.status_code == 404
+
+    def test_delete_nonexistent_transaction_404(self, client):
+        resp = client.delete("/api/transactions/9999")
+        assert resp.status_code == 404
+
+
+class TestDashboardWithData:
+    def test_dashboard_with_data(self, client):
+        # Create an account
+        acct_resp = client.post("/api/accounts", json={
+            "name": "My Checking", "type": "checking",
+            "starting_balance": 2000.0,
+        })
+        assert acct_resp.status_code == 201
+        acct_id = acct_resp.json()["id"]
+
+        # Create a transaction
+        txn_resp = client.post("/api/transactions", json={
+            "account_id": acct_id, "type": "expense",
+            "amount": 100.0, "description": "Grocery Store",
+            "date": "2025-03-01",
+        })
+        assert txn_resp.status_code == 201
+
+        # Dashboard should reflect the account
+        resp = client.get("/api/dashboard")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["accounts"]) == 1
+        assert data["accounts"][0]["name"] == "My Checking"

@@ -1,6 +1,6 @@
 # Implementation Plan — My Budget AI
 
-Status: 113 backend tests passing, frontend builds clean. Tags: 0.0.1–0.0.6.
+Status: 132 backend tests passing, frontend builds clean. Tags: 0.0.1–0.0.7.
 
 ---
 
@@ -45,6 +45,18 @@ Status: 113 backend tests passing, frontend builds clean. Tags: 0.0.1–0.0.6.
 - **Importer test**: `M/D/YYYY` unpadded date format parsing.
 - **start.sh**: Production script that builds frontend and serves full app via uvicorn on port 8000.
 - Total: 113 tests passing (was 93)
+
+### Phase 7: Transaction Creation, Statements UI, Test Coverage (tag 0.0.7)
+- **Bug fix**: `auto_create_statements()` was never called at startup — wired into `app.py` lifespan so CC statement snapshots are created when the app boots.
+- **Manual transaction creation**: Transactions page now has an "Add Transaction" form with conditional fields (category for expenses, transfer-to for transfers). Auto-categorizes expenses server-side.
+- **Date filtering on Transactions**: Start/end date inputs in the filter bar, wired to backend query params.
+- **Statements page**: New frontend page (`/statements`) showing CC statement snapshots with All/Unpaid toggle, account filter, overdue highlighting (red), and "Mark Paid" button. API client `statements.ts` added.
+- **Sidebar updated**: 6 nav items (added Statements after Reports).
+- **Test coverage** (19 new tests):
+  - `test_date_helpers.py` (8 tests): `parse_date` for ISO/slash/unpadded/dash formats + invalid input; `is_future_date` boundary tests.
+  - `test_formatters.py` (6 tests): `format_currency` basic/zero/negative; `format_signed_currency` for income/expense/transfer.
+  - API 404 tests (5 tests): PUT/DELETE nonexistent account/transaction return 404; dashboard with populated data.
+- Total: 132 tests passing (was 113)
 
 ---
 

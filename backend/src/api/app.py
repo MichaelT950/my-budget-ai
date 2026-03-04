@@ -10,8 +10,13 @@ from fastapi.staticfiles import StaticFiles
 from src.api.deps import set_connection
 from src.api.routers import accounts, categories, dashboard, import_csv, reports, statements, transactions
 from src.database.connection import create_connection
+from src.database.repositories.account_repo import AccountRepository
+from src.database.repositories.statement_repo import StatementRepository
+from src.database.repositories.transaction_repo import TransactionRepository
 from src.database.schema import initialize_database
 from src.database.seeds import seed_categories
+from src.services.balance_calculator import BalanceCalculator
+from src.services.statement_service import StatementService
 
 
 @asynccontextmanager
@@ -22,6 +27,15 @@ async def lifespan(app: FastAPI):
     initialize_database(conn)
     seed_categories(conn)
     set_connection(conn)
+
+    # Auto-create CC statement snapshots on startup
+    account_repo = AccountRepository(conn)
+    statement_repo = StatementRepository(conn)
+    transaction_repo = TransactionRepository(conn)
+    balance_calc = BalanceCalculator(account_repo, transaction_repo)
+    statement_svc = StatementService(account_repo, statement_repo, balance_calc)
+    statement_svc.auto_create_statements()
+
     yield
     conn.close()
 
