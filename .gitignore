@@ -11,3 +11,6 @@ frontend/dist/
 text.md
 backend/.venv
 **/budget.db
+**/budget.db-shm
+**/budget.db-wal
+**/budget.db-journal
