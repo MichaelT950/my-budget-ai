@@ -48,6 +48,9 @@ export default function ImportCsv() {
     setImportedCount(0);
   }
 
+  const duplicateCount = preview.filter(t => t.is_duplicate).length;
+  const newTransactions = preview.filter(t => !t.is_duplicate);
+
   const previewColumns = [
     { key: 'date', header: 'Date', render: (t: ImportPreviewTransaction) => formatDate(t.date) },
     { key: 'description', header: 'Description', render: (t: ImportPreviewTransaction) => t.description },
@@ -66,6 +69,14 @@ export default function ImportCsv() {
       key: 'amount', header: 'Amount',
       render: (t: ImportPreviewTransaction) => formatCurrency(t.amount),
       className: 'text-right',
+    },
+    {
+      key: 'status', header: 'Status',
+      render: (t: ImportPreviewTransaction) => t.is_duplicate ? (
+        <span className="px-2 py-0.5 rounded text-xs font-medium text-amber-700 bg-amber-50">Duplicate</span>
+      ) : (
+        <span className="px-2 py-0.5 rounded text-xs font-medium text-green-700 bg-green-50">New</span>
+      ),
     },
   ];
 
@@ -123,12 +134,23 @@ export default function ImportCsv() {
             </div>
           )}
 
+          {duplicateCount > 0 && (
+            <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 mb-4">
+              <p className="text-sm font-medium text-amber-800">
+                {duplicateCount} duplicate{duplicateCount > 1 ? 's' : ''} detected — these will be skipped on import.
+              </p>
+            </div>
+          )}
+
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm text-gray-600">{preview.length} transactions to import</p>
+            <p className="text-sm text-gray-600">
+              {newTransactions.length} new transaction{newTransactions.length !== 1 ? 's' : ''} to import
+              {duplicateCount > 0 && `, ${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''} skipped`}
+            </p>
             <div className="flex gap-2">
               <button
                 onClick={() => confirmMut.mutate()}
-                disabled={preview.length === 0 || confirmMut.isPending}
+                disabled={newTransactions.length === 0 || confirmMut.isPending}
                 className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700 disabled:opacity-50"
               >
                 {confirmMut.isPending ? 'Importing...' : 'Confirm Import'}
@@ -151,8 +173,13 @@ export default function ImportCsv() {
       {step === 'done' && (
         <div className="bg-green-50 border border-green-300 rounded-lg p-6 text-center">
           <p className="text-lg font-medium text-green-800">
-            Successfully imported {importedCount} transactions
+            Successfully imported {importedCount} transaction{importedCount !== 1 ? 's' : ''}
           </p>
+          {(confirmMut.data?.skipped_duplicates ?? 0) > 0 && (
+            <p className="text-sm text-amber-700 mt-1">
+              {confirmMut.data!.skipped_duplicates} duplicate{confirmMut.data!.skipped_duplicates > 1 ? 's' : ''} skipped
+            </p>
+          )}
           <button
             onClick={handleReset}
             className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700"

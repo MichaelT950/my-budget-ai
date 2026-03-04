@@ -101,12 +101,15 @@ export interface ImportPreviewTransaction {
   amount: number;
   description: string;
   date: string;
+  category_id: number | null;
+  is_duplicate: boolean;
 }
 
 export interface ImportPreviewResponse {
   transactions: ImportPreviewTransaction[];
   errors: string[];
   total_rows: number;
+  duplicate_count: number;
 }
 
 export interface ImportConfirmRequest {
@@ -116,6 +119,7 @@ export interface ImportConfirmRequest {
 
 export interface ImportConfirmResponse {
   imported_count: number;
+  skipped_duplicates: number;
 }
 
 // --- Reports ---

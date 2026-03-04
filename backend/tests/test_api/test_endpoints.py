@@ -291,6 +291,83 @@ class TestImport:
         txns = client.get(f"/api/transactions?account_id={acct_id}").json()
         assert len(txns) == 1
 
+    def test_preview_detects_duplicates(self, client):
+        """Previewing a CSV with already-imported transactions flags duplicates."""
+        acct_id = self._setup_account(client)
+        # First import a transaction
+        client.post("/api/import/confirm", json={
+            "account_id": acct_id,
+            "transactions": [
+                {"account_id": acct_id, "type": "expense", "amount": 50.0,
+                 "description": "Grocery Store", "date": "2025-01-15"},
+            ],
+        })
+        # Now preview a CSV containing the same transaction
+        csv_content = "date,amount,description\n2025-01-15,-50.00,Grocery Store\n2025-01-16,-25.00,Gas Station\n"
+        resp = client.post(
+            "/api/import/preview",
+            data={"account_id": str(acct_id)},
+            files={"file": ("test.csv", io.BytesIO(csv_content.encode()), "text/csv")},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["duplicate_count"] == 1
+        dups = [t for t in data["transactions"] if t["is_duplicate"]]
+        assert len(dups) == 1
+        assert dups[0]["description"] == "Grocery Store"
+
+    def test_confirm_skips_duplicates(self, client):
+        """Confirm endpoint skips transactions flagged as duplicates."""
+        acct_id = self._setup_account(client)
+        resp = client.post("/api/import/confirm", json={
+            "account_id": acct_id,
+            "transactions": [
+                {"account_id": acct_id, "type": "expense", "amount": 50.0,
+                 "description": "Grocery Store", "date": "2025-01-15",
+                 "is_duplicate": True},
+                {"account_id": acct_id, "type": "expense", "amount": 25.0,
+                 "description": "Gas Station", "date": "2025-01-16",
+                 "is_duplicate": False},
+            ],
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["imported_count"] == 1
+        assert data["skipped_duplicates"] == 1
+
+        txns = client.get(f"/api/transactions?account_id={acct_id}").json()
+        assert len(txns) == 1
+        assert txns[0]["description"] == "Gas Station"
+
+    def test_preview_preserves_category_id(self, client):
+        """Preview assigns category_id for expense transactions."""
+        acct_id = self._setup_account(client)
+        csv_content = "date,amount,description\n2025-01-15,-50.00,Grocery Store\n"
+        resp = client.post(
+            "/api/import/preview",
+            data={"account_id": str(acct_id)},
+            files={"file": ("test.csv", io.BytesIO(csv_content.encode()), "text/csv")},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        # category_id should be assigned (auto-categorized)
+        assert data["transactions"][0]["category_id"] is not None
+
+    def test_confirm_uses_provided_category_id(self, client):
+        """Confirm endpoint uses category_id from the request body."""
+        acct_id = self._setup_account(client)
+        resp = client.post("/api/import/confirm", json={
+            "account_id": acct_id,
+            "transactions": [
+                {"account_id": acct_id, "type": "expense", "amount": 50.0,
+                 "description": "Grocery Store", "date": "2025-01-15",
+                 "category_id": 1},
+            ],
+        })
+        assert resp.status_code == 200
+        txns = client.get(f"/api/transactions?account_id={acct_id}").json()
+        assert txns[0]["category_id"] == 1
+
 
 # --- 404 coverage ---
 

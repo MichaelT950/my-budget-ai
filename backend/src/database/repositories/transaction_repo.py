@@ -96,3 +96,20 @@ class TransactionRepository:
         cursor = self.conn.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
         self.conn.commit()
         return cursor.rowcount > 0
+
+    def find_duplicates(
+        self, account_id: int, transactions: list[Transaction]
+    ) -> list[bool]:
+        """Check which transactions already exist (by account_id + date + amount + description).
+
+        Returns a list of booleans parallel to the input list — True means duplicate.
+        """
+        results = []
+        for txn in transactions:
+            cursor = self.conn.execute(
+                """SELECT COUNT(*) FROM transactions
+                   WHERE account_id = ? AND date = ? AND amount = ? AND description = ?""",
+                (account_id, txn.date, txn.amount, txn.description),
+            )
+            results.append(cursor.fetchone()[0] > 0)
+        return results

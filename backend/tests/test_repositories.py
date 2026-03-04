@@ -227,6 +227,48 @@ class TestTransactionRepository:
                 description="Bad type", category_id=category_id, date="2024-01-15",
             ))
 
+    def test_find_duplicates_detects_existing(self, conn, checking_account, category_id):
+        """find_duplicates returns True for transactions matching existing records."""
+        repo = TransactionRepository(conn)
+        repo.create(Transaction(
+            account_id=checking_account.id, type="expense", amount=50.0,
+            description="WHOLE FOODS", category_id=category_id, date="2024-01-15",
+        ))
+        candidates = [
+            Transaction(account_id=checking_account.id, type="expense", amount=50.0,
+                        description="WHOLE FOODS", date="2024-01-15"),
+            Transaction(account_id=checking_account.id, type="expense", amount=25.0,
+                        description="GAS STATION", date="2024-01-16"),
+        ]
+        flags = repo.find_duplicates(checking_account.id, candidates)
+        assert flags == [True, False]
+
+    def test_find_duplicates_empty_db(self, conn, checking_account):
+        """find_duplicates returns all False when no transactions exist."""
+        repo = TransactionRepository(conn)
+        candidates = [
+            Transaction(account_id=checking_account.id, type="expense", amount=50.0,
+                        description="WHOLE FOODS", date="2024-01-15"),
+        ]
+        flags = repo.find_duplicates(checking_account.id, candidates)
+        assert flags == [False]
+
+    def test_find_duplicates_different_account(self, conn, checking_account, category_id):
+        """Transactions on a different account are not considered duplicates."""
+        repo = TransactionRepository(conn)
+        acct_repo = AccountRepository(conn)
+        other = acct_repo.create(Account(name="Savings", type="savings"))
+        repo.create(Transaction(
+            account_id=other.id, type="expense", amount=50.0,
+            description="WHOLE FOODS", category_id=category_id, date="2024-01-15",
+        ))
+        candidates = [
+            Transaction(account_id=checking_account.id, type="expense", amount=50.0,
+                        description="WHOLE FOODS", date="2024-01-15"),
+        ]
+        flags = repo.find_duplicates(checking_account.id, candidates)
+        assert flags == [False]
+
 
 # --- Statement Repository ---
 

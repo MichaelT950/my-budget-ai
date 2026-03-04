@@ -38,21 +38,33 @@ async def preview_import(
     cat_repo = get_category_repo(conn)
     categorizer = get_categorizer(cat_repo)
 
-    preview_txns = []
+    # Auto-categorize expenses
     for t in result.transactions:
         if t.type == "expense" and not t.category_id:
             cat = categorizer.categorize_with_fallback(t.description)
             t.category_id = cat.id
+
+    # Check for duplicates against existing transactions
+    txn_repo = get_transaction_repo(conn)
+    dup_flags = txn_repo.find_duplicates(account_id, result.transactions)
+
+    preview_txns = []
+    duplicate_count = 0
+    for t, is_dup in zip(result.transactions, dup_flags):
+        if is_dup:
+            duplicate_count += 1
         preview_txns.append(ImportPreviewTransaction(
             account_id=t.account_id, type=t.type,
             amount=t.amount, description=t.description,
-            date=t.date,
+            date=t.date, category_id=t.category_id,
+            is_duplicate=is_dup,
         ))
 
     return ImportPreviewResponse(
         transactions=preview_txns,
         errors=result.errors,
         total_rows=result.total_rows,
+        duplicate_count=duplicate_count,
     )
 
 
@@ -62,21 +74,22 @@ def confirm_import(
     conn: sqlite3.Connection = Depends(get_conn),
 ):
     txn_repo = get_transaction_repo(conn)
-    cat_repo = get_category_repo(conn)
-    categorizer = get_categorizer(cat_repo)
+
+    # Filter out duplicates flagged in the preview
+    non_duplicates = [t for t in body.transactions if not t.is_duplicate]
+    skipped = len(body.transactions) - len(non_duplicates)
 
     transactions = []
-    for t in body.transactions:
-        category_id = None
-        if t.type == "expense":
-            cat = categorizer.categorize_with_fallback(t.description)
-            category_id = cat.id
-
+    for t in non_duplicates:
         transactions.append(Transaction(
             account_id=body.account_id, type=t.type,
             amount=t.amount, description=t.description,
-            category_id=category_id, date=t.date,
+            category_id=t.category_id, date=t.date,
         ))
 
-    txn_repo.create_many(transactions)
-    return ImportConfirmResponse(imported_count=len(transactions))
+    if transactions:
+        txn_repo.create_many(transactions)
+    return ImportConfirmResponse(
+        imported_count=len(transactions),
+        skipped_duplicates=skipped,
+    )

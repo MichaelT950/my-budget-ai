@@ -104,12 +104,15 @@ class ImportPreviewTransaction(BaseModel):
     amount: float
     description: str
     date: str
+    category_id: int | None = None
+    is_duplicate: bool = False
 
 
 class ImportPreviewResponse(BaseModel):
     transactions: list[ImportPreviewTransaction]
     errors: list[str]
     total_rows: int
+    duplicate_count: int = 0
 
 
 class ImportConfirmRequest(BaseModel):
@@ -119,6 +122,7 @@ class ImportConfirmRequest(BaseModel):
 
 class ImportConfirmResponse(BaseModel):
     imported_count: int
+    skipped_duplicates: int = 0
 
 
 # --- Reports ---

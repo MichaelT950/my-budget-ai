@@ -1,6 +1,6 @@
 # Implementation Plan — My Budget AI
 
-Status: 132 backend tests passing, frontend builds clean. Tags: 0.0.1–0.0.7.
+Status: 139 backend tests passing, frontend builds clean. Tags: 0.0.1–0.0.8.
 
 ---
 
@@ -58,6 +58,15 @@ Status: 132 backend tests passing, frontend builds clean. Tags: 0.0.1–0.0.7.
   - API 404 tests (5 tests): PUT/DELETE nonexistent account/transaction return 404; dashboard with populated data.
 - Total: 132 tests passing (was 113)
 
+### Phase 8: Duplicate Detection on Import, Category ID Preservation (tag 0.0.8)
+- **Duplicate detection**: `TransactionRepository.find_duplicates()` checks (account_id, date, amount, description) against existing transactions. Preview endpoint flags duplicates with `is_duplicate=True` and returns `duplicate_count`. Confirm endpoint automatically skips duplicate-flagged transactions and reports `skipped_duplicates`.
+- **Category ID preservation**: `ImportPreviewTransaction` schema now includes `category_id`. Preview auto-categorizes expenses and returns the assigned category. Confirm uses the provided `category_id` instead of re-categorizing from scratch — user edits between preview and confirm are preserved.
+- **Frontend duplicate UX**: Import preview table shows "Duplicate" / "New" status column. Duplicate warning banner with count. Confirm button disabled when all transactions are duplicates. Done screen shows skipped duplicate count.
+- **Test coverage** (7 new tests):
+  - Repo: `find_duplicates` detects existing, empty DB returns all False, different account not considered duplicate.
+  - API: preview detects duplicates, confirm skips duplicates, preview preserves category_id, confirm uses provided category_id.
+- Total: 139 tests passing (was 132)
+
 ---
 
 ## Key Spec References
@@ -84,5 +93,4 @@ Status: 132 backend tests passing, frontend builds clean. Tags: 0.0.1–0.0.7.
 ## Future Work
 
 - **CSV Column Mapping UI** (post-MVP)
-- **Duplicate Detection** on import (post-MVP)
 - **Split Transactions** — `split_group_id` column (post-MVP)
